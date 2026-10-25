@@ -17,11 +17,12 @@
     <nav aria-label="Main">
       <a href="#/" data-nav="home">Home</a>
       <a href="#/players" data-nav="players">Players</a>
-      <a href="#/draft" data-nav="draft">Draft board</a>
+      <a href="#/prospects" data-nav="prospects">Prospects</a>
+      <a href="#/draft" data-nav="draft">Draft</a>
       <a href="#/teams" data-nav="teams">Teams</a>
+      <a href="#/hof" data-nav="hof">Hall of Fame</a>
       <a href="#/h2h" data-nav="h2h">Head to head</a>
       <a href="#/trade" data-nav="trade">Trade</a>
-      <a href="#/about" data-nav="about">How it works</a>
     </nav>
     <div class="search">
       <input id="q" type="search" placeholder="Search players" autocomplete="off" aria-label="Search players">
@@ -31,6 +32,16 @@
   </div>
 </header>
 <main id="view"><p class="muted wrap page">Loading data…</p></main>
+<footer class="site-foot">
+  <div class="foot-in">
+    <div class="foot-text">
+      <p><b>EHM Player Cards</b> <span id="foot-snap"></span></p>
+      <p>Everything here comes from what an EHM client can see. Est. CA, est. PA and the projections are model estimates;
+        the training save's true values are only used to train and test the models.</p>
+    </div>
+    <a class="foot-link" href="#/about" data-nav="about"><b>How it works →</b><span>The models, how accurate they are, the backtest and the data checks</span></a>
+  </div>
+</footer>
 <div id="tip" class="tip" hidden></div>
 <script src="data/ehm_data.js"></script>
 <script src="data/ehm_data_2.js"></script>
