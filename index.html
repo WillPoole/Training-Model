@@ -8,7 +8,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
 <link rel="stylesheet" href="styles.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
+<script>
+/* the stored theme before the (large) data file loads, so a dark page doesn't flash light */
+try { const t = localStorage.getItem("ehm-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) { /* storage blocked */ }
+</script>
 </head>
 <body>
 <header class="top">
@@ -17,12 +21,19 @@
     <nav aria-label="Main">
       <a href="#/" data-nav="home">Home</a>
       <a href="#/players" data-nav="players">Players</a>
+      <a href="#/teams" data-nav="teams">Teams</a>
       <a href="#/prospects" data-nav="prospects">Prospects</a>
       <a href="#/draft" data-nav="draft">Draft</a>
-      <a href="#/teams" data-nav="teams">Teams</a>
+      <a href="#/playoffs" data-nav="playoffs">Playoffs</a>
       <a href="#/hof" data-nav="hof">Hall of Fame</a>
-      <a href="#/h2h" data-nav="h2h">Head to head</a>
-      <a href="#/trade" data-nav="trade">Trade</a>
+      <div class="navmenu">
+        <button type="button" class="navmenu-btn" data-nav="tools" aria-expanded="false" aria-controls="navmenu-list">Tools <span aria-hidden="true">▾</span></button>
+        <div class="navmenu-list" id="navmenu-list">
+          <a href="#/h2h" data-nav="h2h">Head to head</a>
+          <a href="#/trade" data-nav="trade">Trade predictor</a>
+        </div>
+      </div>
+      <a href="#/about" data-nav="about">How it works</a>
     </nav>
     <div class="search">
       <input id="q" type="search" placeholder="Search players" autocomplete="off" aria-label="Search players">
@@ -45,6 +56,8 @@
 <div id="tip" class="tip" hidden></div>
 <script src="data/ehm_data.js"></script>
 <script src="data/ehm_data_2.js"></script>
+<script src="data/ehm_data_3.js"></script>
+<script src="logos/logos.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
