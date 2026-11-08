@@ -22,18 +22,33 @@ try { const t = localStorage.getItem("ehm-theme"); if (t) document.documentEleme
       <a href="#/" data-nav="home">Home</a>
       <a href="#/players" data-nav="players">Players</a>
       <a href="#/teams" data-nav="teams">Teams</a>
-      <a href="#/prospects" data-nav="prospects">Prospects</a>
-      <a href="#/draft" data-nav="draft">Draft</a>
-      <a href="#/playoffs" data-nav="playoffs">Playoffs</a>
-      <a href="#/hof" data-nav="hof">Hall of Fame</a>
+      <a href="#/gms" data-nav="gms">GMs</a>
       <div class="navmenu">
-        <button type="button" class="navmenu-btn" data-nav="tools" aria-expanded="false" aria-controls="navmenu-list">Tools <span aria-hidden="true">▾</span></button>
-        <div class="navmenu-list" id="navmenu-list">
-          <a href="#/h2h" data-nav="h2h">Head to head</a>
-          <a href="#/trade" data-nav="trade">Trade predictor</a>
+        <button type="button" class="navmenu-btn" aria-expanded="false" aria-controls="navmenu-draft">Draft <span aria-hidden="true">▾</span></button>
+        <div class="navmenu-list" id="navmenu-draft">
+          <a href="#/draft" data-nav="draft">Draft board</a>
+          <a href="#/draft/underrated" data-nav="draft">Underrated</a>
+          <a href="#/prospects" data-nav="prospects">Prospects</a>
+          <a href="#/draft/past" data-nav="draft">Past drafts</a>
         </div>
       </div>
-      <a href="#/about" data-nav="about">How it works</a>
+      <div class="navmenu">
+        <button type="button" class="navmenu-btn" aria-expanded="false" aria-controls="navmenu-league">League <span aria-hidden="true">▾</span></button>
+        <div class="navmenu-list" id="navmenu-league">
+          <a href="#/trades" data-nav="trades">Trades</a>
+          <a href="#/playoffs" data-nav="playoffs">Playoffs</a>
+          <a href="#/hof" data-nav="hof">Hall of Fame</a>
+        </div>
+      </div>
+      <div class="navmenu">
+        <button type="button" class="navmenu-btn" aria-expanded="false" aria-controls="navmenu-tools">Tools <span aria-hidden="true">▾</span></button>
+        <div class="navmenu-list" id="navmenu-tools">
+          <a href="#/value" data-nav="value">Value</a>
+          <a href="#/h2h" data-nav="h2h">Head to head</a>
+          <a href="#/trade" data-nav="trade">Trade predictor</a>
+          <a href="#/about" data-nav="about">How it works</a>
+        </div>
+      </div>
     </nav>
     <div class="search">
       <input id="q" type="search" placeholder="Search players" autocomplete="off" aria-label="Search players">
@@ -57,7 +72,32 @@ try { const t = localStorage.getItem("ehm-theme"); if (t) document.documentEleme
 <script src="data/ehm_data.js"></script>
 <script src="data/ehm_data_2.js"></script>
 <script src="data/ehm_data_3.js"></script>
+<script src="data/ehm_data_4.js"></script>
 <script src="logos/logos.js"></script>
-<script src="app.js"></script>
+<script src="js/00-globals.js"></script>
+<script src="js/01-utils.js"></script>
+<script src="js/02-projection.js"></script>
+<script src="js/03-ui-core.js"></script>
+<script src="js/04-rankings-seasons.js"></script>
+<script src="js/04b-players-page.js"></script>
+<script src="js/05-player-page.js"></script>
+<script src="js/06-awards-comps-war.js"></script>
+<script src="js/07-shots.js"></script>
+<script src="js/08-attributes.js"></script>
+<script src="js/09-chart-export.js"></script>
+<script src="js/09b-draft-evidence.js"></script>
+<script src="js/10-scout-draft.js"></script>
+<script src="js/10b-draft-room.js"></script>
+<script src="js/11-about.js"></script>
+<script src="js/12-value-home.js"></script>
+<script src="js/13-prospects.js"></script>
+<script src="js/14-teams.js"></script>
+<script src="js/15-value-trade.js"></script>
+<script src="js/16-playoffs.js"></script>
+<script src="js/17-rank-nav.js"></script>
+<script src="js/18-leagues.js"></script>
+<script src="js/20-trades.js"></script>
+<script src="js/21-gms.js"></script>
+<script src="js/19-router.js"></script>
 </body>
 </html>
