@@ -79,8 +79,8 @@ function renderTeams(club, tab = "roster", arg, arg2) {
   <section class="band"><div class="wrap">
     <div class="team-head">${logo(club, 56)}
       <div class="grow"><h1>${esc(club)}</h1><p class="lede">${[lgs.map(lgLink).join(", ") || "No league",
-        rec ? `${rec.w}–${rec.l}–${rec.otl}, ${rec.pts} points (${rankLink(teamRankHref("pts", club), ordinal(rec.place))}) in ${seasonLabel(SEASON)}` : "", `${ps.length} players`, `Snapshot ${fmtDate(D.dates.at(-1))}`].filter(Boolean).join(" · ")}</p>
-        ${isNhl && D.gms ? `<p class="small team-gm">GM ${gmLink(gmOf(club))}${(D.gms.tenures.filter(t => t.club === club && t.to).length) ? ` · before: ${D.gms.tenures.filter(t => t.club === club && t.to).map(t => gmLink(t.gm)).join(", ")}` : ""}</p>` : ""}</div>
+        rec ? `${rec.w}–${rec.l}–${rec.otl}, ${rec.pts} points (${rankLink(teamRankHref("pts", club), ordinal(rec.place))}) in ${seasonLabel(SEASON)}` : "", isNhl && D.gms ? `GM ${gmLink(gmOf(club))}${D.gms.tenures.some(t => t.club === club && t.to) ? ` (before: ${D.gms.tenures.filter(t => t.club === club && t.to).map(t => gmLink(t.gm)).join(", ")})` : ""}` : "",
+        `${ps.length} players`, `Snapshot ${fmtDate(D.dates.at(-1))}`].filter(Boolean).join(" · ")}</p></div>
       <span class="inline team-nav">${isNhl ? `<label class="inline">Team <select id="team-sel">${nhlClubs().map(c => `<option ${c === club ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></label>` : ""}<a href="#/teams">All teams</a></span>
     </div>
     ${tabBar("Team sections", [["roster", "Roster"], ...(hasPlayers ? [["players", "Player stats"]] : []), ...(statSeasons.length ? [["stats", "Team stats"]] : []),

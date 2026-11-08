@@ -67,7 +67,7 @@ function treeEnd(team, a) {
   }
   return "";
 }
-/* One asset as a card: a player (position, age, est. CA, value) or a pick (original team's logo). */
+/* One asset as a card: a player (position, his club now, age, est. CA, value) or a pick (original team's logo). */
 function treeAsset(a, end = "") {
   if (a[0] === "pick") {
     const from = clubOfAbbr(a[5]);
@@ -75,14 +75,14 @@ function treeAsset(a, end = "") {
   }
   const p = a[0] === "player" ? tradePlayer(a) : null;
   if (!p) return `<div class="tt-card tt-asset"><span class="tt-pos">?</span><div><b>${esc(a[1])}</b></div>${end}</div>`;
-  return `<div class="tt-card tt-asset"><span class="tt-pos">${esc((p.pos || "").split("/")[0])}</span><div><a href="${route(p.k)}"><b>${esc(p.n)}</b></a>
+  return `<div class="tt-card tt-asset"><span class="tt-pos">${esc((p.pos || "").split("/")[0])}</span>${clubOf(p) ? logo(clubOf(p), 24) : ""}<div><a href="${route(p.k)}"><b>${esc(p.n)}</b></a>
     <small class="muted">${p.age} · est. CA ${fmt(p.ca, 0)} · ${fmt(playerValue(p).five, 1)} WAR</small></div>${end}</div>`;
 }
 /* A small chip for the "sent" row of a later trade; tree = this asset is the one the tree follows. */
 function treeChip(a, tree) {
   const p = a[0] === "player" ? tradePlayer(a) : null;
   const name = p ? `<a href="${route(p.k)}">${esc(p.n)}</a>` : esc(a[1]);
-  const icon = a[0] === "pick" ? logo(clubOfAbbr(a[5]), 16) : "";
+  const icon = a[0] === "pick" ? logo(clubOfAbbr(a[5]), 16) : p && clubOf(p) ? logo(clubOf(p), 16) : "";   // a player's club now
   return `<span class="tt-chip${tree ? " tree" : " also"}" title="${tree ? "Followed by this tree" : "Also in this trade, not from this tree"}">${icon}${name}</span>`;
 }
 /* A later trade: who it went to, when, everything the team sent (the tree's assets highlighted, the rest marked "also")
@@ -90,13 +90,13 @@ function treeChip(a, tree) {
 function treeTrade(team, mine, next, seen, drawn) {
   const other = next.t.s.find(y => y[0] !== team), club = clubOfAbbr(team), to = clubOfAbbr(other[0]);
   // assets from different branches can meet in one later trade: draw it (and what came back) once, then point to it
-  if (drawn.has(next.t)) return `<li class="tt-tradeli"><div class="tt-card tt-trade tt-ref">${logo(to, 18)}<span>Also went into the trade to <b>${esc(to)}</b>, ${fmtDate(next.t.d)}: shown above</span></div></li>`;
+  if (drawn.has(next.t)) return `<li class="tt-tradeli"><div class="tt-card tt-trade tt-ref">${logo(to, 24)}<span>Also went into the trade to <b>${esc(to)}</b>, ${fmtDate(next.t.d)}: shown above</span></div></li>`;
   drawn.add(next.t);
   const ids = new Set(mine.map(tradeAssetId)), sent = other[2];
   const href = `#/trades/${tradeSeason(next.t.d)}/${tradeQuery({ team: club, from: next.t.d, to: next.t.d })}`;
   const branch = new Set(seen).add(next.t);
   return `<li class="tt-tradeli"><div class="tt-card tt-trade">
-      <div class="tt-head">${logo(club, 18)}<span class="tt-arrow" aria-hidden="true">⇄</span>${logo(to, 18)}<b>Traded to ${esc(to)}</b><time datetime="${next.t.d}">${fmtDate(next.t.d)}</time><a class="small" href="${href}">open trade →</a></div>
+      <div class="tt-head">${logo(club, 24)}<span class="tt-arrow" aria-hidden="true">⇄</span>${logo(to, 24)}<b>Traded to ${esc(to)}</b><time datetime="${next.t.d}">${fmtDate(next.t.d)}</time><a class="small" href="${href}">open trade →</a></div>
       <div class="tt-row"><span class="tt-lbl">Sent</span>${sent.map(a => treeChip(a, ids.has(tradeAssetId(a)))).join("")}</div>
       <div class="tt-row"><span class="tt-lbl">Got</span>${next.back.length ? next.back.map(a => treeChip(a, false).replace(" also", " got")).join("") : `<span class="muted">nothing listed</span>`}</div>
     </div>${next.back.length ? treeBranch(team, next.back, next.t, branch, drawn) : ""}</li>`;
@@ -119,20 +119,30 @@ function treeBranch(team, assets, t, seen, drawn = new Set()) {
 }
 function tradeTree(t) {
   return `<div class="ttree">${t.s.map(x => { const club = clubOfAbbr(x[0]);
-    return `<section class="tt-side"><h4>${logo(club, 22)} ${esc(club)} <span class="muted">received</span></h4>${treeBranch(x[0], x[2], t, new Set([t]))}</section>`; }).join("")}
+    return `<section class="tt-side"><h4>${logo(club, 28)} ${esc(club)} <span class="muted">received</span></h4>${treeBranch(x[0], x[2], t, new Set([t]))}</section>`; }).join("")}
     <p class="tt-key small muted"><span class="tt-chip tree">Highlighted</span> = the asset this tree follows · <span class="tt-chip also">dashed</span> = also in that trade, not from this tree · each later trade lists everything sent and received.</p></div>`;
 }
-/* The trade tree PNG: a top-down tree like a TV trade-tree graphic (the trade at the top, each side's haul below it, every
-   later trade as a "to X for" box with what came back under it, assets that moved together joined with "+"), drawn in the
-   site's own style. Same grouping and once-per-side rule as the page's tree. */
-function ocAsset(a) {
+/* The trade tree PNG: Sportsnet's trade-tree layout (both clubs' logos in a circle on a double-headed arrow, an "X ACQUIRES"
+   box per side, assets as plain names with what became of them, assets that moved together joined with "+", every later
+   trade a small "TO X FOR" box with an arrow into it and what came back below) in the site's own style. Same grouping and once-per-side rule as the page's tree. Logos: the NHL's are drawn from
+   logos/nhl_logos.js (data URIs; the NHL's server sends no CORS header, so its images would taint the canvas). */
+function ocLogo(club, size, onNavy) {   // onNavy: on a navy box, so the logo's dark-background variant
+  const t = NHL_TEAMS[club], file = t ? null : LOGOS[club];
+  const abbr = t ? t[0] : (String(club || "").replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase() || "–");
+  return `<span class="oc-logo" style="--s:${size}px" data-abbr="${t ? t[0] : ""}" data-file="${file ? esc(file) : ""}" data-v="${onNavy || isDark() ? 1 : 0}" title="${esc(club || "")}"><b style="background:${t ? t[1] : "#46607f"};color:${t ? t[2] : "#fff"}">${esc(abbr)}</b></span>`;
+}
+const ocPickName = s => s.replace(/ Round Pick in (\d{4})/, " round $1").replace(/\s*\([A-Z]{2,3}\)$/, "");   // "1st round 2027": the logo shows whose
+const ocName = a => a[0] === "player" && tradePlayer(a) ? tradePlayer(a).n : a[0] === "pick" ? `${ocPickName(a[1])} (${a[5]})` : a[1];
+function ocAsset(team, a, end) {
   if (a[0] === "pick") {
     const from = clubOfAbbr(a[5]);
-    return `<div class="oc-a">${logo(from, 26)}<div><b>${esc(a[1].replace(/ Round Pick in /, " round "))}</b><small>${fmt(tradePickValue(a), 1)} WAR value</small></div></div>`;
+    return `<div class="oc-a oc-pick"><div class="oc-n">${ocLogo(from, 22)}<b>${esc(ocPickName(a[1]))}</b></div>
+      ${end ? `<span class="oc-out">${treeEnd(team, a)}</span>` : ""}<small>${fmt(tradePickValue(a), 1)} WAR value</small></div>`;
   }
   const p = a[0] === "player" ? tradePlayer(a) : null;
-  if (!p) return `<div class="oc-a"><span class="tt-pos">?</span><div><b>${esc(a[1])}</b></div></div>`;
-  return `<div class="oc-a"><span class="tt-pos">${esc((p.pos || "").split("/")[0])}</span><div><b>${esc(p.n)}</b><small>${p.age} · est. CA ${fmt(p.ca, 0)} · ${fmt(playerValue(p).five, 1)} WAR</small></div></div>`;
+  if (!p) return `<div class="oc-a"><div class="oc-n"><b>${esc(a[1])}</b></div></div>`;
+  return `<div class="oc-a"><div class="oc-n">${ocLogo(clubOf(p), 22)}<b>${esc(p.n)}</b></div>
+    <small>${esc((p.pos || "").split("/")[0])} · ${p.age} · est. CA ${fmt(p.ca, 0)} · ${fmt(playerValue(p).five, 1)} WAR</small>${end ? `<span class="oc-out">${treeEnd(team, a)}</span>` : ""}</div>`;
 }
 function ocBranch(team, assets, t, seen, drawn) {
   const ends = [], groups = new Map();
@@ -143,9 +153,10 @@ function ocBranch(team, assets, t, seen, drawn) {
   }
   const moved = [...groups.values()].sort((a, b) => (a.next.t.d < b.next.t.d ? -1 : 1));
   return [
-    // the assets that went no further share one box (stacked), so a big haul doesn't make the image very wide
-    ...(ends.length ? [`<li><div class="oc-node oc-stack">${ends.map(a => `<div class="oc-row">${ocAsset(a)}${treeEnd(team, a)}</div>`).join("")}</div></li>`] : []),
-    ...moved.map(g => `<li><div class="oc-node oc-moved">${g.mine.map(ocAsset).join(`<span class="oc-plus">+</span>`)}</div><ul>${ocTrade(team, g.mine, g.next, seen, drawn)}</ul></li>`),
+    // the assets that went no further: each on its own branch, or past 4 one node wrapping after 4, so a big haul stays compact
+    ...(ends.length > 4 ? [`<li><div class="oc-node oc-ends">${ends.map(a => ocAsset(team, a, true)).join("")}</div></li>`]
+      : ends.map(a => `<li><div class="oc-node">${ocAsset(team, a, true)}</div></li>`)),
+    ...moved.map(g => `<li><div class="oc-node oc-moved">${g.mine.map(a => ocAsset(team, a, false)).join(`<span class="oc-plus">+</span>`)}</div><ul>${ocTrade(team, g.mine, g.next, seen, drawn)}</ul></li>`),
   ];
 }
 function ocTrade(team, mine, next, seen, drawn) {
@@ -153,29 +164,73 @@ function ocTrade(team, mine, next, seen, drawn) {
   if (drawn.has(next.t)) return `<li><div class="oc-ref">Also went into the trade to ${esc(to)}, ${fmtDate(next.t.d)}: shown elsewhere</div></li>`;
   drawn.add(next.t);
   const ids = new Set(mine.map(tradeAssetId)), also = other[2].filter(a => !ids.has(tradeAssetId(a)));
-  const name = a => a[0] === "player" && tradePlayer(a) ? tradePlayer(a).n : a[1];
+  const withAlso = also.length ? ` · with ${also.slice(0, 2).map(a => esc(ocName(a))).join(", ")}${also.length > 2 ? ` +${also.length - 2} more` : ""}` : "";
   const kids = next.back.length ? ocBranch(team, next.back, next.t, new Set(seen).add(next.t), drawn) : [`<li><div class="oc-ref">nothing listed</div></li>`];
-  return `<li><div class="oc-trade">${logo(to, 22)}<div><b>To ${esc(to)} for</b><small>${fmtDate(next.t.d)}${also.length ? ` · with ${also.map(a => esc(name(a))).join(", ")}` : ""}</small></div></div><ul>${kids.join("")}</ul></li>`;
+  return `<li><i class="oc-in"></i><div class="oc-trade"><span>To</span>${ocLogo(to, 22, true)}<b>${esc(to)}</b><span>for</span></div><small class="oc-when">${fmtDate(next.t.d)}${withAlso}</small><ul>${kids.join("")}</ul></li>`;
 }
-function exportTradeTree(t) {
+/* nhl_logos.js only loads when a PNG is made (~750 KB). */
+const loadNhlLogos = () => window.NHL_LOGO_DATA ? Promise.resolve(window.NHL_LOGO_DATA) : new Promise(res => {
+  const s = document.createElement("script");
+  s.src = LOGO_BASE + "nhl_logos.js";
+  s.onload = () => res(window.NHL_LOGO_DATA || null);
+  s.onerror = () => res(null);
+  document.head.appendChild(s);
+});
+/* An SVG data URI drawn into a PNG data URI px high (html2canvas draws a bitmap more reliably than an SVG). */
+function rasterLogo(src, px) {
+  let ratio = 1.5;
+  try { const vb = atob(src.split(",")[1]).match(/viewBox="[\d.\-]+ [\d.\-]+ ([\d.]+) ([\d.]+)"/); if (vb) ratio = vb[1] / vb[2]; } catch (e) { /* keep 3:2 */ }
+  return new Promise(res => {
+    const im = new Image();
+    im.onload = () => {
+      const c = document.createElement("canvas");
+      c.width = Math.round(px * ratio); c.height = px;
+      c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+      try { res({ src: c.toDataURL("image/png"), ratio }); } catch (e) { res(null); }
+    };
+    im.onerror = () => res(null);
+    im.src = src;
+  });
+}
+/* Swap each badge for its logo where one can be drawn; the badge stays otherwise. Other clubs' logo files are drawn only
+   over http(s) (same origin): from a file:// page they'd taint the canvas. NHL logos have padding: drawn 1.4x the badge. */
+async function ocLogos(sheet) {
+  const data = await loadNhlLogos(), cache = new Map(), served = /^https?:$/.test(location.protocol);
+  for (const el of sheet.querySelectorAll(".oc-logo")) {
+    const size = parseFloat(el.style.getPropertyValue("--s")), { abbr, file, v } = el.dataset;
+    let img = null;
+    if (abbr && data?.[abbr]) {
+      const key = abbr + v + size;
+      if (!cache.has(key)) cache.set(key, await rasterLogo(data[abbr][+v], Math.round(size * 1.4 * 3)));
+      const r = cache.get(key);
+      if (r) img = `<img src="${r.src}" alt="" style="height:${size * 1.4}px;width:${size * 1.4 * r.ratio}px">`;
+    } else if (file && served) img = `<img src="${LOGO_BASE + encodeURIComponent(file)}" alt="" style="height:${size}px;width:auto">`;
+    if (img) { el.innerHTML = img; el.classList.add("has-img"); }
+  }
+}
+async function exportTradeTree(t) {
   if (!t || !pngReady()) return;
   const v = tradeValues(t), drawn = new Set();
   const side = (x, i) => {
-    const club = clubOfAbbr(x[0]), col = NHL_TEAMS[club]?.[1] || "var(--navy)";
-    const kids = x[2].length ? ocBranch(x[0], x[2], t, new Set([t]), new Set()) : [`<li><div class="oc-ref">nothing listed</div></li>`];
-    return `<li><div class="oc-side" style="--tc:${col}">${logo(club, 30)}<div><b>${esc(club)} acquires</b><small>${fmt(v.sides[i].war, 1)} WAR over 5 seasons</small></div></div><ul>${kids.join("")}</ul></li>`;
+    const club = clubOfAbbr(x[0]);
+    const kids = x[2].length ? ocBranch(x[0], x[2], t, new Set([t]), drawn) : [`<li><div class="oc-ref">nothing listed</div></li>`];
+    return `<li><div class="oc-acq" style="--tc:${NHL_TEAMS[club]?.[1] || "var(--s1)"}">${ocLogo(club, 28, true)}<b>${esc(club)} acquires</b></div><small class="oc-when">${fmt(v.sides[i].war, 1)} WAR over 5 seasons</small><ul>${kids.join("")}</ul></li>`;
   };
   const sheet = document.createElement("div");
   sheet.className = "oc-sheet";
-  sheet.innerHTML = `<header class="oc-band"><div><span class="oc-kicker">Trade tree</span><h1>${t.s.map(x => esc(clubOfAbbr(x[0]))).join(" ⇄ ")}</h1></div>
-      <div class="oc-meta"><b>${fmtDate(t.d)}</b><span>Difference ${fmt(v.gap, 1)} WAR</span></div></header>
-    <div class="oc"><ul><li><div class="oc-root">${t.s.map(x => logo(clubOfAbbr(x[0]), 44)).join(`<span>⇄</span>`)}</div><ul>${t.s.map(side).join("")}</ul></li></ul></div>
-    <div class="oc-key"><span class="tt-out keep">still with / still held / drafted</span><span class="tt-out gone">left</span><span class="oc-trade mini"><b>To X for</b></span> a later trade: what came back is below it, "with" = also sent</div>
-    <div class="xfoot"><span>${esc(D.title || "EHM Player Cards")} · NHL Trade Center · values with today's ratings</span><span>Snapshot ${fmtDate(D.dates.at(-1))}</span></div>`;
-  sheet.querySelectorAll(".logo").forEach(l => { l.querySelector("img")?.remove(); l.classList.add("nologo"); });
+  sheet.innerHTML = `<header class="oc-band"><div><span class="oc-kicker">Trade tree · ${fmtDate(t.d)}</span><h1>${t.s.map(x => esc(clubOfAbbr(x[0]))).join(" ⇄ ")}</h1></div>
+      <div class="oc-meta"><span>Difference</span><b>${fmt(v.gap, 1)} WAR</b></div></header>
+    <div class="oc"><div class="oc-axis"><i class="oc-ah l"></i><i class="oc-ah r"></i><div class="oc-hub">${t.s.map(x => ocLogo(clubOfAbbr(x[0]), 44)).join(`<span>⇄</span>`)}</div></div>
+      <ul class="oc-sides">${t.s.map(side).join("")}</ul></div>
+    <div class="oc-key"><span class="tt-out keep">still with / still held / drafted</span><span class="tt-out gone">left</span><span class="oc-trade mini"><span>To</span><b>X</b><span>for</span></span> a later trade, what came back is below it · "with" = also sent · WAR = 5-season expected, with today's ratings</div>
+    <div class="xfoot"><span>${esc(D.title || "EHM Player Cards")} · NHL Trade Center</span><span>Snapshot ${fmtDate(D.dates.at(-1))}</span></div>`;
+  sheet.querySelectorAll(".oc-sides ul").forEach(ul => [...ul.children].forEach((li, i, all) => {
+    li.classList.toggle("one", all.length === 1); li.classList.toggle("first", i === 0); li.classList.toggle("last", i === all.length - 1);
+  }));
+  await ocLogos(sheet);
   // the tree is as wide as it needs to be: measure it, then keep the image under ~15,000 px wide
   document.body.appendChild(sheet);
-  const width = Math.max(1600, sheet.querySelector(".oc").scrollWidth + 80);
+  const width = Math.max(1600, sheet.querySelector(".oc-sides").scrollWidth + 120);
   sheet.remove();
   sheet.style.width = width + "px";
   const name = `Trade tree ${t.d} ${t.s.map(x => x[0]).join("-")}`.replace(/[^\w\- ]+/g, "");

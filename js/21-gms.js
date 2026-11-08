@@ -2,7 +2,7 @@
 
 /* GM pages: #/gms[/<part>] (the greatest GM ranking) and #/gm/<name> (one GM). D.gms comes from ehm/site/gms.py: who ran
    each club when (read off the game's GM Status screen at login; the first GM seen at a club is assumed to have run it
-   since the save's first snapshot), each GM's record in the months he was in charge, and each club's lineup strength per
+   since the earliest date in the data), each GM's record in the months he was in charge, and each club's lineup strength per
    snapshot. Trades and drafts are valued here with the trades page's and the draft pages' formulas, so every page agrees.
    Composite = weighted mean of each part's z-score across GMs; a part with no data yet (no draft inside the save) drops out
    and the other weights are renormalised. */
@@ -118,7 +118,7 @@ function gmNote() {
   return `<div class="gm-note small muted">
     <p><b>How each part is scored.</b> ${GM_PARTS.map(([, label, tip]) => `<b>${label}:</b> ${esc(tip)}.`).join(" ")}</p>
     <p><b>Who ran each club.</b> Read off the game's GM Status screen each time the crawler logs in (latest ${fmtDate(G.asOf)}).
-      ${bd ? `${bd} club${bd > 1 ? "s are" : " is"} assumed to have had the same GM since ${fmtDate(G.first)}, the save's first snapshot, as the list was first read on ${fmtDate(G.firstRead)}.` : ""}
+      ${bd ? `${bd} club${bd > 1 ? "s are" : " is"} assumed to have had the same GM since ${fmtDate(G.first)}, the earliest date in the data (first snapshot or trade), as the list was first read on ${fmtDate(G.firstRead)}.` : ""}
       Known changes go in <code>gm_overrides.csv</code>${G.overrides ? ` (${G.overrides} row${G.overrides > 1 ? "s" : ""} applied)` : ""}.
       Results only count months with box scores; the playoffs and the Cup count for the GM in charge at the season's end.</p></div>`;
 }
@@ -126,10 +126,10 @@ function gmNote() {
 function renderGm(gm) {
   markNav("gms");
   if (!D.gms) return renderGms();
-  const { list } = gmTable(), s = list.find(x => x.gm === gm);
+  const { list, live } = gmTable(), s = list.find(x => x.gm === gm);
   if (!s) { view.innerHTML = `<div class="wrap page"><p class="warn">No GM called ${esc(gm)}. <a href="#/gms">All GMs</a></p></div>`; return; }
   const n = list.length, card = (label, v, k, f = x => gmSigned(x, 1)) => `<div><span>${esc(label)}</span><b class="${k === "score" ? "" : gmCls(v)}">${f(v)}</b>
-      <small>${rankLink(k === "score" ? "#/gms" : gmRankHref(k), `${ordinal(s.rank[k])} of ${n}`)}</small></div>`;
+      <small>${k !== "score" && !live.some(([x]) => x === k) ? `<span class="muted">no data yet</span>` : rankLink(k === "score" ? "#/gms" : gmRankHref(k), `${ordinal(s.rank[k])} of ${n}`)}</small></div>`;
   const runs = s.tenures.map(t => {
     const rs = s.rows.filter(r => r.club === t.club && r.from >= t.from && (!t.to || r.to <= t.to)), st = gmStrength(t.club, t.from, t.to);
     const w = rs.reduce((a, r) => a + r.w, 0), l = rs.reduce((a, r) => a + r.l, 0), o = rs.reduce((a, r) => a + r.otl, 0);
@@ -144,7 +144,7 @@ function renderGm(gm) {
   const trades = [...s.tr].sort((a, b) => b.t.d.localeCompare(a.t.d)).map(x => {
     const other = x.t.s[1 - x.i], oc = other ? clubOfAbbr(other[0]) : null, og = x.t.g?.[1 - x.i];
     return `<tr><td>${fmtDate(x.t.d)}</td><td>${oc ? tlink(oc, `${logo(oc, 18)} ${esc(oc)}`) : "–"}${og ? ` <small class="muted">${gmLink(og)}</small>` : ""}</td>
-      <td>${esc(x.t.s[x.i][2].map(a => a[1]).join(", ") || "Nothing listed")}</td><td class="num">${fmt(x.mine, 1)}</td><td class="num">${fmt(x.other, 1)}</td>
+      <td class="gm-recv">${esc(x.t.s[x.i][2].map(a => a[1]).join(", ") || "Nothing listed")}</td><td class="num">${fmt(x.mine, 1)}</td><td class="num">${fmt(x.other, 1)}</td>
       <td class="num ${gmCls(x.net)}"><b>${gmSigned(x.net)}</b></td></tr>`;
   }).join("");
   const drafts = s.dr.sort((a, b) => a.overall - b.overall).map(x => `<tr><td>${x.year}</td><td class="num">${x.round}</td><td class="num">${x.overall}</td>
@@ -156,7 +156,7 @@ function renderGm(gm) {
   const cols = [css("--s1"), css("--s2"), "#1baf7a", "#6250d6"];
   const series = s.tenures.map((t, i) => ({ name: `${t.club} (${fmtDate(t.from)} – ${t.to ? fmtDate(t.to) : "now"})`, color: cols[i % cols.length],
     pts: gmStrength(t.club, t.from, t.to).map(([d, v]) => [months(d), v]) })).filter(x => x.pts.length > 1);
-  const chart = series.length ? lineChart(series, `Months since ${fmtDate(D.gms.first)}`, "Lineup exp. WAR", { ymin: Math.min(...series.flatMap(x => x.pts.map(q => q[1]))) }) : `<p class="muted">Needs two snapshots.</p>`;
+  const chart = series.length ? lineChart(series, `Months since ${fmtDate(D.gms.first)}`, "Lineup exp. WAR", { xfmt: (shown => x => { const m = Math.round(x); return shown.has(m) ? "" : (shown.add(m), m); })(new Set()), ymin: Math.min(...series.flatMap(x => x.pts.map(q => q[1]))) }) : `<p class="muted">Needs two snapshots.</p>`;
   const tblBox = (title, head, rows, empty) => `<section class="card-box flush" aria-label="${esc(title)}"><h2 class="box-h">${esc(title)}</h2>
       ${rows ? `<div class="tablewrap"><table class="rank sortable">${head}<tbody>${rows}</tbody></table></div>` : `<p class="muted">${empty}</p>`}</section>`;
   view.innerHTML = `<section class="band"><div class="wrap"><div class="team-head">${logo(s.club, 56)}<div class="grow"><h1>${esc(s.gm)}</h1>

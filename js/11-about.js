@@ -269,7 +269,7 @@ function renderAbout(section) {
 
   ${D.gms ? `<h3>GM ranking</h3>
   <p>Who ran each club is read off the game's GM Status screen each time the crawler logs in (first ${fmtDate(D.gms.firstRead)}, latest ${fmtDate(D.gms.asOf)}).
-  The GM seen at a club's first reading is assumed to have run it since ${fmtDate(D.gms.first)}, the first snapshot; known changes go in
+  The GM seen at a club's first reading is assumed to have run it since ${fmtDate(D.gms.first)}, the earliest date in the data (first snapshot or trade); known changes go in
   <code>gm_overrides.csv</code>. A club's trades, picks, results and lineup strength count for the GM in charge on that date.</p>
   <ul>${GM_PARTS.map(([, label, tip]) => `<li><b>${label}</b>: ${esc(tip)}.</li>`).join("")}</ul>
   <p>The <a href="#/gms">GM score</a> is the weighted mean of each part's z-score across GMs (${Object.entries(D.gms.weights).map(([k, v]) => `${GM_PARTS.find(x => x[0] === k)?.[1] || k} ${v}`).join(", ")};
